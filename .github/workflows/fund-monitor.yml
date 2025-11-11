@@ -38,22 +38,51 @@ jobs:
         if [ -f "config.ini" ]; then echo "✓ config.ini 存在"; else echo "✗ config.ini 不存在"; fi
         if [ -f "requirements.txt" ]; then echo "✓ requirements.txt 存在"; else echo "✗ requirements.txt 不存在"; fi
         
-    - name: 安装依赖
+    - name: 安装依赖（尝试多种方法）
       run: |
         python -m pip install --upgrade pip
+        
+        # 方法1：尝试安装requirements.txt中的依赖
         if [ -f "requirements.txt" ]; then
-          echo "安装requirements.txt中的依赖..."
-          pip install -r requirements.txt
-        else
-          echo "requirements.txt不存在，安装必要的依赖..."
-          pip install requests beautifulsoup4 akshare pandas
+          echo "尝试安装requirements.txt中的依赖..."
+          pip install -r requirements.txt || echo "方法1失败，尝试方法2..."
+        fi
+        
+        # 方法2：如果方法1失败，逐个安装依赖
+        if ! python -c "import requests" 2>/dev/null; then
+          echo "安装requests..."
+          pip install requests
+        fi
+        
+        if ! python -c "import bs4" 2>/dev/null; then
+          echo "安装beautifulsoup4..."
+          pip install beautifulsoup4
+        fi
+        
+        if ! python -c "import akshare" 2>/dev/null; then
+          echo "安装akshare..."
+          pip install akshare
+        fi
+        
+        if ! python -c "import pandas" 2>/dev/null; then
+          echo "安装pandas..."
+          pip install pandas
+        fi
+        
+        if ! python -c "import lxml" 2>/dev/null; then
+          echo "安装lxml..."
+          pip install lxml
         fi
         
     - name: 检查Python包安装
       run: |
         echo "检查已安装的Python包:"
-        pip list | grep -E "(requests|beautifulsoup4|akshare|pandas)"
-        
+        python -c "import requests; print('requests版本:', requests.__version__)"
+        python -c "import bs4; print('beautifulsoup4版本:', bs4.__version__)"
+        python -c "import akshare; print('akshare版本:', akshare.__version__)"
+        python -c "import pandas; print('pandas版本:', pandas.__version__)"
+        python -c "import lxml; print('lxml版本:', lxml.__version__)"
+
     - name: 检查配置文件
       run: |
         if [ ! -f "config.ini" ]; then
