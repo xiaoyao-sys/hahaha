@@ -55,9 +55,3 @@ jobs:
         # 执行主程序
         python final_lof_fund_scraper.py
         
-    - name: 失败时发送通知
-      if: failure()
-      uses: dacbd/create-discord-webhook@main
-      with:
-        webhook: ${{ secrets.DISCORD_WEBHOOK }}
-        message: "⚠️ 基金监控程序执行失败，请检查GitHub Actions日志。"
