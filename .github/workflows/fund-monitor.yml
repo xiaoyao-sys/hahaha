@@ -1,0 +1,63 @@
+name: hahaha控
+
+on:
+  schedule:
+    - cron: '0 6 * * 1-5'  # 每天UTC时间6:00执行（北京时间14:00），仅工作日（周一到周五）
+    - cron: '30 6 * * 1-5'   # 每天UTC时间6:30执行（北京时间14:30），仅工作日（周一到周五）
+  workflow_dispatch:  # 允许手动触发
+  push:
+    branches: [ main ]
+    paths:
+      - 'final_lof_fund_scraper.py'
+      - 'fund_limit_fetcher.py'
+      - 'config.ini'
+
+jobs:
+  monitor-funds:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: [3.8]
+    
+    steps:
+    - name: Checkout代码
+      uses: actions/checkout@v3
+      
+    - name: 设置Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+        
+    - name: 安装依赖
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        
+    - name: 检查配置文件
+      run: |
+        if [ ! -f "config.ini" ]; then
+          echo "错误: 找不到config.ini配置文件"
+          exit 1
+        fi
+        
+    - name: 运行基金监控程序
+      env:
+        WECHAT_WEBHOOK_KEY: ${{ secrets.WECHAT_WEBHOOK_KEY }}
+      run: |
+        # 如果环境变量中有webhook key，则更新配置文件
+        if [ -n "$WECHAT_WEBHOOK_KEY" ]; then
+          echo "使用GitHub Secrets中的webhook key"
+          sed -i "s/webhook_key = .*/webhook_key = $WECHAT_WEBHOOK_KEY/" config.ini
+        else
+          echo "使用config.ini文件中的webhook key"
+        fi
+        
+        # 执行主程序
+        python final_lof_fund_scraper.py
+        
+    - name: 失败时发送通知
+      if: failure()
+      uses: dacbd/create-discord-webhook@main
+      with:
+        webhook: ${{ secrets.DISCORD_WEBHOOK }}
+        message: "⚠️ 基金监控程序执行失败，请检查GitHub Actions日志。"
