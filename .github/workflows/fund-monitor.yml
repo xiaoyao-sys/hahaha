@@ -1,4 +1,4 @@
-name: hahaha控
+name: hahaha
 
 on:
   schedule:
@@ -28,10 +28,31 @@ jobs:
       with:
         python-version: ${{ matrix.python-version }}
         
+    - name: 检查文件结构
+      run: |
+        echo "当前目录内容:"
+        ls -la
+        echo "检查必要文件是否存在:"
+        if [ -f "final_lof_fund_scraper.py" ]; then echo "✓ final_lof_fund_scraper.py 存在"; else echo "✗ final_lof_fund_scraper.py 不存在"; fi
+        if [ -f "fund_limit_fetcher.py" ]; then echo "✓ fund_limit_fetcher.py 存在"; else echo "✗ fund_limit_fetcher.py 不存在"; fi
+        if [ -f "config.ini" ]; then echo "✓ config.ini 存在"; else echo "✗ config.ini 不存在"; fi
+        if [ -f "requirements.txt" ]; then echo "✓ requirements.txt 存在"; else echo "✗ requirements.txt 不存在"; fi
+        
     - name: 安装依赖
       run: |
         python -m pip install --upgrade pip
-        pip install -r requirements.txt
+        if [ -f "requirements.txt" ]; then
+          echo "安装requirements.txt中的依赖..."
+          pip install -r requirements.txt
+        else
+          echo "requirements.txt不存在，安装必要的依赖..."
+          pip install requests beautifulsoup4 akshare pandas
+        fi
+        
+    - name: 检查Python包安装
+      run: |
+        echo "检查已安装的Python包:"
+        pip list | grep -E "(requests|beautifulsoup4|akshare|pandas)"
         
     - name: 检查配置文件
       run: |
@@ -39,6 +60,8 @@ jobs:
           echo "错误: 找不到config.ini配置文件"
           exit 1
         fi
+        echo "config.ini内容:"
+        cat config.ini
         
     - name: 运行基金监控程序
       env:
@@ -52,6 +75,10 @@ jobs:
           echo "使用config.ini文件中的webhook key"
         fi
         
-        # 执行主程序
-        python final_lof_fund_scraper.py
+        echo "运行前检查:"
+        echo "当前目录内容:"
+        ls -la
         
+        # 执行主程序
+        echo "开始执行基金监控程序..."
+        python final_lof_fund_scraper.py
